@@ -3,6 +3,7 @@ import sys
 import libvirt
 import os
 import xml.etree.ElementTree
+import socket               # Import socket module
 xmlconfig = """
 <domain type='kvm'>
 <name>#chotabaadal</name>
@@ -125,22 +126,42 @@ if __name__ == "__main__":
 	if conn == None:
 		print('Failed to open connection to qemu:///system', file=sys.stderr)
 		exit(1)
+	s = socket.socket()         # Create a socket object
+	host = socket.gethostname() # Get local machine name
+	port = int(sys.argv[1])     # Reserve a port for your service.
+	s.bind((host, port))        # Bind to the port
+	s.listen(5)                 # Now wait for client connection.
+	while True:
+		c, addr = s.accept()     # Establish connection with client.
+		#print 'Got connection from', addr
+		print (c.recv(1024))
+		resume('centos11')
+		delete('centos11')
+		create('centos11')
+		stop('centos11')
+		resume('centos11')
+		domainIDs = conn.listDomainsID()
+		if domainIDs == None:
+			print('Failed to get a list of domain IDs', file=sys.stderr)
+		print("Active domain IDs:")
+		if len(domainIDs) == 0:
+			print('  None')
+		else:
+			print (len(domainIDs))
+			for domainID in domainIDs:
+				dom = conn.lookupByID(domainID)
+				if dom == None:
+					print('Failed to get the domain object', file=sys.stderr)
+				else:
+					state, maxmem, mem, cpus, cput = dom.info()
+					device_info = ' '.join([str(i) for i in dom.info()]) 
+					c.send(device_info)
+					print('The state is ' + str(state))
+					print('The max memory is ' + str(maxmem))
+					print('The memory is ' + str(mem))
+					print('The number of cpus is ' + str(cpus))
+					print('The cpu time is ' + str(cput))
+		c.close()                # Close the connection
 
-	resume('centos11')
-	delete('centos11')
-	create('centos11')
-	stop('centos11')
-	resume('centos11')
-	domainIDs = conn.listDomainsID()
-	if domainIDs == None:
-		print('Failed to get a list of domain IDs', file=sys.stderr)
-
-	print("Active domain IDs:")
-	if len(domainIDs) == 0:
-		print('  None')
-	else:
-		print (len(domainIDs))
-		for domainID in domainIDs:
-			print('  '+str(domainID))
 	conn.close()
 	exit(0)
