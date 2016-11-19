@@ -1,9 +1,10 @@
-from  __future__ import print_function
 import sys
 import libvirt
 import os
 import xml.etree.ElementTree
+import subprocess
 import socket               # Import socket module
+available_vcpu = 16
 xmlconfig = """
 <domain type='kvm'>
 <name>#chotabaadal</name>
@@ -101,88 +102,105 @@ xmlconfig = """
 </domain>
 
 """
-import os
-from collections import namedtuple
 
-_ntuple_diskusage = namedtuple('usage', 'total used free')
+# message encoding:
+# i - provide info of all VMs running on the physical machine.
+# c <num> create vm centos<num>
+# s <num>
+# d <num>
+# r <num>
+# e - exit node controller.
 
-def disk_usage(path):
-    """Return disk usage statistics about the given path.
-
-    Returned valus is a named tuple with attributes 'total', 'used' and
-    'free', which are the amount of total, used and free space, in bytes.
-    """
-    st = os.statvfs(path)
-    free = st.f_bavail * st.f_frsize
-    total = st.f_blocks * st.f_frsize
-    used = (st.f_blocks - st.f_bfree) * st.f_frsize
-    return _ntuple_diskusage(total, used, free)
-
+# state, maxmem, mem, cpus, cput = dom.info()
 
 def create(name):
-	global xmlconfig
-	xmlfile = xmlconfig.replace('#chotabaadal', name)	
-	dom = conn.createXML(xmlfile, 0)
-	if dom == None:
-		print('Failed to create a domain from an XML definition.', file=sys.stderr)
-		exit(1)
+  global xmlconfig
+  xmlfile = xmlconfig.replace('#chotabaadal', name) 
+  dom = conn.createXML(xmlfile, 0)
+  if dom == None:
+    print('Failed to create a domain from an XML definition.')
+    exit(1)
 
-	print('Guest '+dom.name()+' has booted', file=sys.stderr)	
+  print('Guest '+dom.name()+' has booted')  
 
 def stop(name):
-	os.system('virsh suspend ' + name)
+  os.system('virsh suspend ' + name)
 
 def delete(name):
-	os.system('virsh destroy ' + name)
+  os.system('virsh destroy ' + name)
 
 def resume(name):
-	os.system('virsh resume ' + name)
+  os.system('virsh resume ' + name)
 
 if __name__ == "__main__": 
-	conn = libvirt.open('qemu:///system')
-	if conn == None:
-		print('Failed to open connection to qemu:///system', file=sys.stderr)
-		exit(1)
-	s = socket.socket()         # Create a socket object
-	host = socket.gethostname() # Get local machine name
-	port = int(sys.argv[1])     # Reserve a port for your service.
-	s.bind((host, port))        # Bind to the port
-	s.listen(5)                 # Now wait for client connection.
-	while True:
-		c, addr = s.accept()     # Establish connection with client.
-		#print 'Got connection from', addr
-		print (c.recv(1024))
-		resume('centos11')
-		delete('centos11')
-		create('centos11')
-		stop('centos11')
-		resume('centos11')
-		domainIDs = conn.listDomainsID()
-		if domainIDs == None:
-			print('Failed to get a list of domain IDs', file=sys.stderr)
-		print("Active domain IDs:")
-		print ("Total" + str(disk_usage("/"))[0]))
-		print ("Used" + str(disk_usage("/"))[1]))
-		print ("Free" + str(disk_usage("/"))[2]))
-		
-		if len(domainIDs) == 0:
-			print('  None')
-		else:
-			print (len(domainIDs))
-			for domainID in domainIDs:
-				dom = conn.lookupByID(domainID)
-				if dom == None:
-					print('Failed to get the domain object', file=sys.stderr)
-				else:
-					state, maxmem, mem, cpus, cput = dom.info()
-					device_info = ' '.join([str(i) for i in dom.info()]) 
-					c.send(device_info)
-					print('The state is ' + str(state))
-					print('The max memory is ' + str(maxmem))
-					print('The memory is ' + str(mem))
-					print('The number of cpus is ' + str(cpus))
-					print('The cpu time is ' + str(cput))
-		c.close()                # Close the connection
+  conn = libvirt.open('qemu:///system')
+  if conn == None:
+    print('Failed to open connection to qemu:///system')
+    exit(1)
 
-	conn.close()
-	exit(0)
+  pools = conn.listAllStoragePools(0)
+  if pools == None:
+    print('Failed to locate any StoragePool objects.')
+    exit(1)
+
+  for pool in pools:
+    print('Pool: '+pool.name())
+    info = pool.info()
+    print('Pool: '+pool.name())
+    print(' UUID: '+pool.UUIDString())
+    print(' Autostart: '+str(pool.autostart()))
+    print(' Is active: '+str(pool.isActive()))
+    print(' Is persistent: '+str(pool.isPersistent()))
+    print(' Num volumes: '+str(pool.numOfVolumes()))
+    print(' Pool state: '+str(info[0]))
+    print(' Capacity: '+str(info[1]))
+    print(' Allocation: '+str(info[2]))
+    print(' Available: '+str(info[3]))
+  s = socket.socket()         # Create a socket object
+  host = socket.gethostname() # Get local machine name
+  port = int(sys.argv[1])     # Reserve a port for your service.
+  s.bind((host, port))        # Bind to the port
+  s.listen(5)                 # Now wait for client connection.
+  c, addr = s.accept()     # Establish connection with client.
+  while True:
+    
+    #print 'Got connection from', addr
+    msg = c.recv(1024).split(' ')
+    print msg
+    mem = ''
+    if msg[0] == 'e':
+      break
+    elif msg[0] == 'i':
+      mem = subprocess.check_output('virsh nodememstats', shell = True)
+      domainIDs = conn.listDomainsID()
+      if domainIDs == None:
+        print('Failed to get a list of domain IDs')
+      print("Active domain IDs: "),
+      print (len(domainIDs))
+      usedvcpu = 0
+      for domainID in domainIDs:
+        dom = conn.lookupByID(domainID)
+        if dom == None:
+          print('Failed to get the domain object')
+        else:
+          state, maxmem, memo, cpus, cput = dom.info()
+          usedvcpu += cpus
+      mem += (' available vcpu = ' + str(available_vcpu - usedvcpu))
+      #mem = str(mem) + ' available vcpu = ' + str(available_vcpu - usedvcpu)
+      print mem
+      c.send(mem)
+    else:
+      name = 'centos' + msg[1]
+      if msg[0] == 'c':
+        create(name)
+      elif msg[0] == 's':
+        stop(name)
+      elif msg[0] == 'd':
+        delete(name)
+      elif msg[0] == 'r':
+        resume(name)
+
+  c.close()               # Close the connection
+
+  conn.close()
+  exit(0)
