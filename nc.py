@@ -151,7 +151,7 @@ if __name__ == "__main__":
 		msg = c.recv(1024).split(' ')
 		print "msg = ",
 		print msg
-		mem = 'freeMemory = ' + str(memory)
+		mem = str(memory)
 		if msg[0] == 'e':
 			break
 		elif msg[0] == 'i':
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 				else:
 					state, maxmem, memo, cpus, cput = dom.info()
 					usedvcpu += cpus
-			mem += (' available vcpu = ' + str(available_vcpu - usedvcpu))
+			mem = mem + ' ' + str(available_vcpu - usedvcpu)
 			#mem = str(mem) + ' available vcpu = ' + str(available_vcpu - usedvcpu)
 			print mem
 			c.send(mem)
