@@ -1,10 +1,13 @@
-import sys
 import libvirt
 import os
 import xml.etree.ElementTree
 import subprocess
 import socket							 # Import socket module
 available_vcpu = 16
+conn = libvirt.open('qemu:///system')
+if conn == None:
+		print('Failed to open connection to qemu:///system')
+		exit(1)
 xmlconfig = """
 <domain type='kvm'>
 <name>#chotabaadal</name>
@@ -120,8 +123,7 @@ def create(name):
 	if dom == None:
 		print('Failed to create a domain from an XML definition.')
 		exit(1)
-
-	print('Guest '+dom.name()+' has booted')	
+	return 'Guest '+dom.name()+' has booted'
 
 def stop(name):
 	os.system('virsh suspend ' + name)
@@ -132,58 +134,24 @@ def delete(name):
 def resume(name):
 	os.system('virsh resume ' + name)
 
-if __name__ == "__main__": 
-	conn = libvirt.open('qemu:///system')
-	if conn == None:
-		print('Failed to open connection to qemu:///system')
-		exit(1)
-
-	memory = conn.getFreeMemory()
-	s = socket.socket()				 # Create a socket object
-	host = socket.gethostname() # Get local machine name
-	port = int(sys.argv[1])		 # Reserve a port for your service.
-	s.bind((host, port))				# Bind to the port
-	s.listen(5)								 # Now wait for client connection.
-	c, addr = s.accept()		 # Establish connection with client.
-	while True:
-		
-		#print 'Got connection from', addr
-		msg = c.recv(1024).split(' ')
-		print "msg = ",
-		print msg
-		mem = str(memory)
-		if msg[0] == 'e':
-			break
-		elif msg[0] == 'i':
-			domainIDs = conn.listDomainsID()
-			if domainIDs == None:
-				print('Failed to get a list of domain IDs')
-			print("Active domain IDs: "),
-			print (len(domainIDs))
-			usedvcpu = 0
-			for domainID in domainIDs:
-				dom = conn.lookupByID(domainID)
-				if dom == None:
-					print('Failed to get the domain object')
-				else:
-					state, maxmem, memo, cpus, cput = dom.info()
-					usedvcpu += cpus
-			mem = mem + ' ' + str(available_vcpu - usedvcpu)
-			#mem = str(mem) + ' available vcpu = ' + str(available_vcpu - usedvcpu)
-			print mem
-			c.send(mem)
+def get_stats():
+	mem = str(conn.getFreeMemory())
+	domainIDs = conn.listDomainsID()
+	if domainIDs == None:
+		print('Failed to get a list of domain IDs')
+	print("Active domain IDs: "),
+	print (len(domainIDs))
+	usedvcpu = 0
+	for domainID in domainIDs:
+		dom = conn.lookupByID(domainID)
+		if dom == None:
+			print('Failed to get the domain object')
 		else:
-			name = 'centos' + msg[1]
-			if msg[0] == 'c':
-				create(name)
-			elif msg[0] == 's':
-				stop(name)
-			elif msg[0] == 'd':
-				delete(name)
-			elif msg[0] == 'r':
-				resume(name)
+			state, maxmem, memo, cpus, cput = dom.info()
+			usedvcpu += cpus
+	mem = mem + ' ' + str(available_vcpu - usedvcpu)
+	print mem
+	return mem
 
-	c.close()							 # Close the connection
 
-	conn.close()
-	exit(0)
+
