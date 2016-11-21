@@ -2,6 +2,7 @@ import libvirt
 import os
 import xml.etree.ElementTree
 import subprocess
+import uuid
 import socket
 import json
 TOTAL_VCPU = 16
@@ -11,17 +12,20 @@ if conn == None:
 		exit(1)
 xmlconfig = """
 <domain type='kvm'>
-<name>#CBname</name>
+	<name>#CBname</name>
+	<uuid>#CBuuid</uuid>
 	<memory unit='KiB'>#CBmemory</memory>
 	<currentMemory unit='KiB'>#CBmemory</currentMemory>
 	<vcpu placement='static'>#CBcores</vcpu>
 	<os>
 		<type arch='x86_64' machine='pc-i440fx-xenial'>hvm</type>
+		<boot dev='cdrom'/>
 		<boot dev='hd'/>
 	</os>
 	<features>
 		<acpi/>
 		<apic/>
+		<pae/>
 	</features>
 	<cpu mode='custom' match='exact'>
 		<model fallback='allow'>Haswell</model>
@@ -41,16 +45,19 @@ xmlconfig = """
 	<devices>
 		<emulator>/usr/bin/kvm-spice</emulator>
 		<disk type='file' device='disk'>
-			<driver name='qemu' type='qcow2'/>
-			<source file='/var/lib/libvirt/images/centos7.qcow2'/>
+			<driver name='qemu' type='raw'/>
+			<source file='/var/lib/libvirt/images/#CBname.img'/>
 			<target dev='vda' bus='virtio'/>
+			<alias name="virtio-disk0"/>
 			<address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
 		</disk>
 		<disk type='file' device='cdrom'>
 			<driver name='qemu' type='raw'/>
-			<target dev='hda' bus='ide'/>
+			<source file="/var/lib/libvirt/boot/CentOS-7-x86_64-DVD-1511.iso"/>
+			<target dev='hdc' bus='ide'/>
 			<readonly/>
-			<address type='drive' controller='0' bus='0' target='0' unit='0'/>
+			<alias name="ide0-1-0"/>
+			<address type='drive' controller='0' bus='1' target='0' unit='0'/>
 		</disk>
 		<controller type='usb' index='0' model='ich9-ehci1'>
 			<address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x7'/>
@@ -67,25 +74,36 @@ xmlconfig = """
 			<master startport='4'/>
 			<address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x2'/>
 		</controller>
-		<controller type='pci' index='0' model='pci-root'/>
+		<controller type='pci' index='0' model='pci-root'>
+			<alias name="pci.0"/>
+		</controller>
 		<controller type='ide' index='0'>
+			<alias name="ide0"/>
 			<address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x1'/>
 		</controller>
 		<controller type='virtio-serial' index='0'>
 			<address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
 		</controller>
-		<interface type='network'>
-			<mac address='52:54:00:29:3d:b9'/>
-			<source network='default'/>
-			<model type='virtio'/>
-			<address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
-		</interface>
+		<interface type="bridge">
+			<mac address="#CBmac"/>
+			<source bridge="br0"/>
+			<target dev="vnet0"/>
+			<model type="virtio"/>
+			<alias name="net0"/>
+			<address bus="0x00" domain="0x0000" function="0x0" slot="0x03" type="pci"/>
+			</interface>
 		<serial type='pty'>
+			<source path="/dev/pts/12"/>
 			<target port='0'/>
+			<alias name="serial0"/>
 		</serial>
-		<console type='pty'>
-			<target type='serial' port='0'/>
+		<console tty="/dev/pts/12" type="pty">
+			<source path="/dev/pts/12"/>
+			<target port="0" type="serial"/>
+			<alias name="serial0"/>
 		</console>
+		<input bus="ps2" type="mouse"/>
+		<input bus="ps2" type="keyboard"/>
 		<channel type='unix'>
 			<source mode='bind'/>
 			<target type='virtio' name='org.qemu.guest_agent.0'/>
@@ -94,12 +112,20 @@ xmlconfig = """
 		<input type='tablet' bus='usb'/>
 		<input type='mouse' bus='ps2'/>
 		<input type='keyboard' bus='ps2'/>
-		<graphics type='vnc' port='-1' autoport='yes'/>
+		<graphics type='vnc' port='-1' autoport='yes' listen="127.0.0.1">
+			<listen address="127.0.0.1" type="address"/>
+		</graphics>
+		<sound model="ich6">
+			<alias name="sound0"/>
+			<address bus="0x00" domain="0x0000" function="0x0" slot="0x04" type="pci"/>
+		</sound>
 		<video>
-			<model type='cirrus' vram='16384' heads='1'/>
+			<model type='cirrus' vram='9216' heads='1'/>
+			<alias name="video0"/>
 			<address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
 		</video>
 		<memballoon model='virtio'>
+			<alias name="balloon0"/>
 			<address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
 		</memballoon>
 	</devices>
@@ -108,12 +134,20 @@ xmlconfig = """
 """
 
 # state, maxmem, mem, cpus, cput = dom.info()
+def randomMAC():
+	mac = [ 0x00, 0x16, 0x3e,
+		random.randint(0x00, 0x7f),
+		random.randint(0x00, 0xff),
+		random.randint(0x00, 0xff) ]
+	return ':'.join(map(lambda x: "%02x" % x, mac))
 
 def create(name,memory,vcpu):
 	global xmlconfig
 	xmlfile = xmlconfig.replace('#CBname', name)
 	xmlfile = xmlfile.replace('#CBmemory', str(memory))
 	xmlfile = xmlfile.replace('#CBcores', str(vcpu))
+	xmlfile = xmlfile.replace('#CBuuid',str(uuid.uuid3(uuid.NAMESPACE_DNS, name)))
+	xmlfile = xmlfile.replace('#CBmac', randomMAC())	
 	dom = conn.createXML(xmlfile, 0)
 	if dom == None:
 		print('LOG :: Failed to create a domain from an XML definition.')
