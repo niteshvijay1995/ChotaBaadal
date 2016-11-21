@@ -24,7 +24,7 @@ class jioClient:
 		return rec_msg
 
 	def close(self):
-		print 'Closing',self
+		print 'LOG :: Closing',self
 		self.s.sendall('exit')
 		self.s.close
 
