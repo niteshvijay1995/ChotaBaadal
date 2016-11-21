@@ -10,7 +10,7 @@ PORT2 = 34534
 nc1 = jioClient('M-1908',PORT1)
 nc2 = jioClient('172.50.88.12',PORT2)
 
-nodes = [nc1,nc2]
+nodes = [nc1]
 
 RRpos = 0	#Round Robin position
 
@@ -27,7 +27,7 @@ def get_all_nodes_stats():
 		node_stats['mem']
 		node_stats['vcpu']
 
-def round_robin(memory,cores):
+def round_robin(memory,cores,disk):
 	print 'Round Robin Scheduling'
 	global RRpos
 	print 'LOG :: RR position - ',RRpos
@@ -47,7 +47,7 @@ def round_robin(memory,cores):
 		if avail_mem>memory and avail_cores>cores:
 			print('LOG :: Creating VM at NC',RRpos+1)
 			VM_Name = 'CB'+str(int(time.time()))
-			status = nodes[RRpos].call_func('create',VM_Name,memory,cores)
+			status = nodes[RRpos].call_func('create',VM_Name,memory,cores,disk)
 			print 'LOG :: Status - ',status
 			if status=='True':
 				done_flag = True

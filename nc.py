@@ -5,6 +5,7 @@ import subprocess
 import uuid
 import socket
 import json
+import random
 TOTAL_VCPU = 16
 conn = libvirt.open('qemu:///system')
 if conn == None:
@@ -19,8 +20,8 @@ xmlconfig = """
 	<vcpu placement='static'>#CBcores</vcpu>
 	<os>
 		<type arch='x86_64' machine='pc-i440fx-xenial'>hvm</type>
-		<boot dev='cdrom'/>
 		<boot dev='hd'/>
+		<boot dev='cdrom'/>
 	</os>
 	<features>
 		<acpi/>
@@ -117,7 +118,7 @@ xmlconfig = """
 		</graphics>
 		<sound model="ich6">
 			<alias name="sound0"/>
-			<address bus="0x00" domain="0x0000" function="0x0" slot="0x04" type="pci"/>
+			<address bus="0x00" domain="0x0000" function="0x0" slot="0x08" type="pci"/>
 		</sound>
 		<video>
 			<model type='cirrus' vram='9216' heads='1'/>
@@ -141,12 +142,19 @@ def randomMAC():
 		random.randint(0x00, 0xff) ]
 	return ':'.join(map(lambda x: "%02x" % x, mac))
 
-def create(name,memory,vcpu):
+def create(name,memory,vcpu,disk):
+	img_path = '/var/lib/libvirt/images/%s.img'%name
+	cmd = 'qemu-img create -f raw '+img_path+' '+str(disk)+'G'
+	print cmd
+	try:
+		os.system(cmd)
+	except Exception as e:
+		print str(e)
 	global xmlconfig
 	xmlfile = xmlconfig.replace('#CBname', name)
 	xmlfile = xmlfile.replace('#CBmemory', str(memory))
 	xmlfile = xmlfile.replace('#CBcores', str(vcpu))
-	xmlfile = xmlfile.replace('#CBuuid',str(uuid.uuid3(uuid.NAMESPACE_DNS, name)))
+	xmlfile = xmlfile.replace('#CBuuid',str(uuid.uuid3(uuid.NAMESPACE_DNS, str(name))))
 	xmlfile = xmlfile.replace('#CBmac', randomMAC())	
 	dom = conn.createXML(xmlfile, 0)
 	if dom == None:
@@ -162,6 +170,11 @@ def delete(name):
 
 def resume(name):
 	os.system('virsh resume ' + name)
+
+def free_disk_space(path):
+	s = os.statvfs(path)
+	return (s.f_bsize*s.f_bavail)/(1024**3)
+
 
 def get_stats():
 	json_msg = {}
@@ -181,6 +194,7 @@ def get_stats():
 			usedvcpu += cpus
 	available_vcpu = TOTAL_VCPU - usedvcpu
 	json_msg['vcpu'] = available_vcpu
+	json_msg['disk'] = free_disk_space('/var/lib/libvirt/images')
 	print json_msg
 	return json.dumps(json_msg)
 
