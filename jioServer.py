@@ -1,4 +1,5 @@
 import socket
+import json
 class jioServer:
 	'Server Class for communication and calling function'
 	def __init__(self,port):
@@ -17,9 +18,11 @@ class jioServer:
 			print("JIOSERVER :: Receiving message...")
 			msg = self.c.recv(1024)
 			print("LOG ::  Message received : ",msg)
+			if msg=='exit':
+				break;
 			json_msg = json.loads(msg)
 			func_name = json_msg['func_name']
-			args = [] = json_msg['args']
+			args = json_msg['args']
 			try:
 				ret_msg = getattr(func_file,func_name)(*args)
 			except:

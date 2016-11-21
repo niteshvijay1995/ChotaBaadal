@@ -18,14 +18,16 @@ class jioClient:
 		for arg in args:
 			args_list.append(arg) 
 		json_msg['args'] = args_list
+		print 'LOG :: Calling function ',json_msg
 		self.s.sendall(json.dumps(json_msg))
 		rec_msg = self.s.recv(1024)
 		return rec_msg
 
 	def close(self):
+		print 'Closing',self
 		self.s.sendall('exit')
 		self.s.close
 
 	def __repr__(self):
-    	return self.host
+		return self.host
 	

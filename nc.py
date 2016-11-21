@@ -112,8 +112,8 @@ xmlconfig = """
 def create(name,memory,vcpu):
 	global xmlconfig
 	xmlfile = xmlconfig.replace('#CBname', name)
-	xmlfile = xmlconfig.replace('#CBmemory', memory)
-	xmlfile = xmlconfig.replace('#CBcores', vcpu)
+	xmlfile = xmlfile.replace('#CBmemory', str(memory))
+	xmlfile = xmlfile.replace('#CBcores', str(vcpu))
 	dom = conn.createXML(xmlfile, 0)
 	if dom == None:
 		print('LOG :: Failed to create a domain from an XML definition.')

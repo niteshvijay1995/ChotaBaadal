@@ -4,24 +4,21 @@ import sys
 import json
 import time
 
-PORT1 = 45674
-PORT2 = 34533
-PORT3 = 65453
+PORT1 = 45675
+PORT2 = 34534
+PORT3 = 65454
 
 nc1 = jioClient('M-1908',PORT1)
-nc2 = jioClient('M-1907',PORT2)
+#nc2 = jioClient('M-1907',PORT2)
 
-nodes = [nc1,nc2]
-
-clc = jioServer(PORT3)
-clc.listen()
+nodes = [nc1]
 
 RRpos = 0	#Round Robin position
 
 def connect_node_controller():
 	for node in nodes:
 		node.connect()
-		print('LOG :: Connected node controller : ',node)
+		print'LOG :: Connected node controller : ',node
 
 
 def get_all_nodes_stats():
@@ -32,20 +29,28 @@ def get_all_nodes_stats():
 		node_stats['vcpu']
 
 def round_robin(memory,cores):
+	print 'Round Robin Scheduling'
+	global RRpos
+	print 'LOG :: RR position - ',RRpos
 	connect_node_controller()
+	print nodes[RRpos].call_func('get_stats')
 	done_flag = False
 	no_of_try = 0
-	while not done_flag and no_of_try<=len(nodes):
+	print 'Loop condition -',(not done_flag) and (no_of_try<=len(nodes))
+	while (not done_flag) and (no_of_try<len(nodes)):
 		if RRpos>len(nodes):
 			RRpos = 0
 		ret_msg = nodes[RRpos].call_func('get_stats')
+		print 'LOG :: ret_msg',ret_msg
 		node_stats = json.loads(ret_msg)
 		avail_mem = node_stats['mem']
 		avail_cores = node_stats['vcpu']
+		print 'STATUS :: Available memory - ',avail_mem,'  Available cores - ',avail_cores
 		if avail_mem>memory and avail_cores>cores:
 			print('LOG :: Creating VM at NC',RRpos+1)
 			VM_Name = 'CB'+str(int(time.time()))
 			status = nodes[RRpos].call_func('create',VM_Name,memory,cores)
+			print 'LOG :: Status - ',status
 			if status=='True':
 				done_flag = True
 				print('LOG :: VM created at NC',RRpos+1)
@@ -53,4 +58,6 @@ def round_robin(memory,cores):
 				print('LOG :: Error Creating VM at NC',RRpos+1)
 		RRpos = RRpos+1
 		no_of_try = no_of_try+1
-nc1.close()
+
+def exit():
+	nc1.close()
