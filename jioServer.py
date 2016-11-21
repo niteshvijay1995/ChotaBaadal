@@ -25,8 +25,8 @@ class jioServer:
 			args = json_msg['args']
 			try:
 				ret_msg = getattr(func_file,func_name)(*args)
-			except:
-				ret_msg = 'Error'
+			except Exception as e:
+				ret_msg = 'Error :: '+str(e)
 			self.c.send(ret_msg)
 		self.c.close()
 
