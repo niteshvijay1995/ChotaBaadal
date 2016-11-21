@@ -6,12 +6,11 @@ import time
 
 PORT1 = 45675
 PORT2 = 34534
-PORT3 = 65454
 
 nc1 = jioClient('M-1908',PORT1)
-#nc2 = jioClient('M-1907',PORT2)
+nc2 = jioClient('172.50.88.12',PORT2)
 
-nodes = [nc1]
+nodes = [nc1,nc2]
 
 RRpos = 0	#Round Robin position
 
@@ -20,7 +19,7 @@ def connect_node_controller():
 		node.connect()
 		print'LOG :: Connected node controller : ',node
 
-
+connect_node_controller()
 def get_all_nodes_stats():
 	for node in nodes:
 		ret_msg = node.call_func('get_stats')
@@ -32,14 +31,12 @@ def round_robin(memory,cores):
 	print 'Round Robin Scheduling'
 	global RRpos
 	print 'LOG :: RR position - ',RRpos
-	connect_node_controller()
-	print nodes[RRpos].call_func('get_stats')
 	done_flag = False
 	no_of_try = 0
-	print 'Loop condition -',(not done_flag) and (no_of_try<=len(nodes))
+	print 'Loop condition -',(not done_flag) and (no_of_try<len(nodes))
 	ret_msg = 'NCs out of resources'
-	while (not done_flag) and (no_of_try<len(nodes)):
-		if RRpos>len(nodes):
+	while (not done_flag) and (no_of_try<=len(nodes)):
+		if RRpos>=len(nodes):
 			RRpos = 0
 		resources = nodes[RRpos].call_func('get_stats')
 		print 'LOG :: ret_msg',resources
@@ -56,10 +53,12 @@ def round_robin(memory,cores):
 				done_flag = True
 				ret_msg = 'VM created at NC'+str(RRpos+1)
 			else:
-				ret_msg = 'Error Creating VM at NC'+str(RRpos+1)
+				ret_msg = 'ERROR :: Error creating VM at NC'+str(RRpos+1)
 		RRpos = RRpos+1
 		no_of_try = no_of_try+1
-		return ret_msg
+	return ret_msg
+
 
 def exit():
-	nc1.close()
+	for node in nodes:
+		node.close()
