@@ -2,18 +2,19 @@ import libvirt
 import os
 import xml.etree.ElementTree
 import subprocess
-import socket							 # Import socket module
-available_vcpu = 16
+import socket
+import json
+TOTAL_VCPU = 16
 conn = libvirt.open('qemu:///system')
 if conn == None:
 		print('Failed to open connection to qemu:///system')
 		exit(1)
 xmlconfig = """
 <domain type='kvm'>
-<name>#chotabaadal</name>
-	<memory unit='KiB'>2097152</memory>
-	<currentMemory unit='KiB'>2097152</currentMemory>
-	<vcpu placement='static'>2</vcpu>
+<name>#CBname</name>
+	<memory unit='KiB'>#CBmemory</memory>
+	<currentMemory unit='KiB'>#CBmemory</currentMemory>
+	<vcpu placement='static'>#CBcores</vcpu>
 	<os>
 		<type arch='x86_64' machine='pc-i440fx-xenial'>hvm</type>
 		<boot dev='hd'/>
@@ -106,24 +107,18 @@ xmlconfig = """
 
 """
 
-# message encoding:
-# i - provide info of all VMs running on the physical machine.
-# c <num> create vm centos<num>
-# s <num>
-# d <num>
-# r <num>
-# e - exit node controller.
-
 # state, maxmem, mem, cpus, cput = dom.info()
 
-def create(name):
+def create(name,memory,vcpu):
 	global xmlconfig
-	xmlfile = xmlconfig.replace('#chotabaadal', name) 
+	xmlfile = xmlconfig.replace('#CBname', name)
+	xmlfile = xmlconfig.replace('#CBmemory', memory)
+	xmlfile = xmlconfig.replace('#CBcores', vcpu)
 	dom = conn.createXML(xmlfile, 0)
 	if dom == None:
-		print('Failed to create a domain from an XML definition.')
-		exit(1)
-	return 'Guest '+dom.name()+' has booted'
+		print('LOG :: Failed to create a domain from an XML definition.')
+		return 'False'
+	return 'True'
 
 def stop(name):
 	os.system('virsh suspend ' + name)
@@ -135,7 +130,8 @@ def resume(name):
 	os.system('virsh resume ' + name)
 
 def get_stats():
-	mem = str(conn.getFreeMemory())
+	json_msg = {}
+	json_msg['mem']= conn.getFreeMemory()
 	domainIDs = conn.listDomainsID()
 	if domainIDs == None:
 		print('Failed to get a list of domain IDs')
@@ -149,9 +145,10 @@ def get_stats():
 		else:
 			state, maxmem, memo, cpus, cput = dom.info()
 			usedvcpu += cpus
-	mem = mem + ' ' + str(available_vcpu - usedvcpu)
-	print mem
-	return mem
+	available_vcpu = TOTAL_VCPU - usedvcpu
+	json_msg['vcpu'] = available_vcpu
+	print json_msg
+	return json.dumps(json_msg)
 
 
 
