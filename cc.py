@@ -34,7 +34,8 @@ def round_robin(memory,cores,disk):
 	done_flag = False
 	no_of_try = 0
 	print 'Loop condition -',(not done_flag) and (no_of_try<len(nodes))
-	ret_msg = 'NCs out of resources'
+	ret_msg = {}
+	error = 'Unavailable resources'
 	while (not done_flag) and (no_of_try<=len(nodes)):
 		if RRpos>=len(nodes):
 			RRpos = 0
@@ -52,12 +53,20 @@ def round_robin(memory,cores,disk):
 			if status=='True':
 				done_flag = True
 				ret_msg = 'VM created at NC'+str(RRpos+1)
+				ret_msg['VM_Name'] = VM_Name
+				ret_msg['Node'] = RRpos+1
 			else:
-				ret_msg = 'ERROR :: Error creating VM at NC'+str(RRpos+1)
+				error = 'Internal issue'
 		RRpos = RRpos+1
 		no_of_try = no_of_try+1
-	return ret_msg
+	ret_msg['Success'] = done_flag
+	if not done_flag:
+		ret_msg['Error'] = error
+	return json.dumps(ret_msg)
 
+def deleteVM(name,node):
+	nc = nodes['node']
+	return nc.call_func('delete',name)
 
 def exit():
 	for node in nodes:

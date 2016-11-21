@@ -167,6 +167,7 @@ def stop(name):
 
 def delete(name):
 	os.system('virsh destroy ' + name)
+	return 'Deleted'
 
 def resume(name):
 	os.system('virsh resume ' + name)
