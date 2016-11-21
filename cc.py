@@ -37,12 +37,13 @@ def round_robin(memory,cores):
 	done_flag = False
 	no_of_try = 0
 	print 'Loop condition -',(not done_flag) and (no_of_try<=len(nodes))
+	ret_msg = 'NCs out of resources'
 	while (not done_flag) and (no_of_try<len(nodes)):
 		if RRpos>len(nodes):
 			RRpos = 0
-		ret_msg = nodes[RRpos].call_func('get_stats')
-		print 'LOG :: ret_msg',ret_msg
-		node_stats = json.loads(ret_msg)
+		resources = nodes[RRpos].call_func('get_stats')
+		print 'LOG :: ret_msg',resources
+		node_stats = json.loads(resources)
 		avail_mem = node_stats['mem']
 		avail_cores = node_stats['vcpu']
 		print 'STATUS :: Available memory - ',avail_mem,'  Available cores - ',avail_cores
@@ -53,11 +54,12 @@ def round_robin(memory,cores):
 			print 'LOG :: Status - ',status
 			if status=='True':
 				done_flag = True
-				print('LOG :: VM created at NC',RRpos+1)
+				ret_msg = 'VM created at NC'+str(RRpos+1)
 			else:
-				print('LOG :: Error Creating VM at NC',RRpos+1)
+				ret_msg = 'Error Creating VM at NC'+str(RRpos+1)
 		RRpos = RRpos+1
 		no_of_try = no_of_try+1
+		return ret_msg
 
 def exit():
 	nc1.close()
