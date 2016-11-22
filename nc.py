@@ -191,5 +191,33 @@ def get_stats():
 	print json_msg
 	return json.dumps(json_msg)
 
+def migrate(domName,destHost):
+	dest_conn = libvirt.open('qemu+ssh://'+destHost+'/system')
+	if dest_conn == None:
+		print('Failed to open connection to qemu+ssh://'+destHost+'/system')
+		exit(1)
+	dom = conn.lookupByName(domName)
+	if dom == None:
+		print('Failed to find the domain '+domName)
+		exit(1)
+	#scp img file to destination host
+	os.system('scp /var/lib/libvirt/images/'+domName+'.img '+destHost+':/var/lib/libvirt/images/')
+	new_dom = dom.migrate(dest_conn, 0, None, None, 0)
+	if new_dom == None:
+		print('Could not migrate to the new domain')
+		exit(1)
+	print('Domain was migrated successfully.')
+	os.system('rm  /var/lib/libvirt/images/'+domName+'.img')
+	dest_conn.close()
+	return 'True'
 
-
+def getAllVM():
+	domains = {}
+	domainIDs = conn.listDomainsID()
+	for domainID in domainIDs:
+		dom = conn.lookupByID(domainID)
+		if dom == None:
+			print('Failed to get the domain object')
+		else:
+			domains[dom.name] = dom.info()
+	return json.dumps(domains)

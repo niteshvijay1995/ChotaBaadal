@@ -4,13 +4,14 @@ import sys
 import json
 import time
 
-PORT1 = 64536
-PORT2 = 34534
 
-nc1 = jioClient('M-1908',PORT1)
+PORT1 = 45671
+PORT2 = 45675
+
+nc1 = jioClient('172.50.88.13',PORT1)
 nc2 = jioClient('172.50.88.12',PORT2)
 
-nodes = [nc1]
+nodes = [nc1,nc2]
 
 RRpos = 0	#Round Robin position
 
@@ -101,6 +102,19 @@ def round_robin(memory,cores,disk):
 def deleteVM(name,node):
 	nc = nodes[node-1]
 	return nc.call_func('delete',name)
+
+def first_fit_bin_packing():
+	i = 0
+	for pri_node in nodes:
+		resources = pri_node.call_func('get_stats')
+		resources = json.loads(resources)
+		for j in range(i+1,len(nodes)):
+			node = nodes[j]
+			domains = node.call_func('getAllVM')
+			domains = json.loads(domains)
+			print domains
+		i += 1
+	return 'hello'
 
 def exit():
 	for node in nodes:

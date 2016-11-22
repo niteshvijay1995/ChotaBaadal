@@ -1,7 +1,7 @@
 from jioClient import jioClient
 import json
 import os.path
-PORT3 = 45365
+PORT3 = 45364
 cc1 = jioClient('M-1908',PORT3)
 clouds = [cc1]
 for cloud in clouds:
@@ -9,8 +9,8 @@ for cloud in clouds:
 VMs = {}	#Dictionary of VMs created (Key-VM_Name)
 #print cc1.call_func('round_robin',3000000,2,20)	#memory,cores,disk
 
-algo = 'round_robin'
-#algo = 'greedy'
+#ialgo = 'round_robin'
+algo = 'greedy'
 if os.path.isfile('log.txt'):
 	s = open('log.txt', 'r').read()
 	VMs = eval(s)
@@ -40,6 +40,7 @@ try:
 				print 'VM created successfully'
 				print 'VM Name : ',VM_info['VM_Name']
 				print 'Zone : ',zone
+				print 'Node : ',VM_info['Node']
 				print '----------------------------------\n'
 				VMs[VM_info['VM_Name']] = {'cc':zone-1,'nc':VM_info['Node']}
 			else:
@@ -54,6 +55,7 @@ try:
 			for name in VMs:
 				print i,'. ',name
 				VM_list.append(name)
+				i += 1
 			print '0 to Cancel'
 			n = int(raw_input())
 			if n==0:
@@ -65,6 +67,9 @@ try:
 			print status,' ',VM_list[n-1]
 			if status == 'Deleted':
 				del VMs[VM_list[n-1]]
+		if inp == 'f':
+			status = clouds[0].call_func('first_fit_bin_packing')
+			print status
 		if inp == 'q':
 			break;
 
