@@ -27,6 +27,36 @@ def get_all_nodes_stats():
 		node_stats['mem']
 		node_stats['vcpu']
 
+def greedy(memory,cores,disk):
+	print 'Greedy Scheduling'
+	ret_msg = {}
+	done_flag = False
+	error = 'Unavailable resources'
+	for node in nodes:
+		resources = node.call_func('get_stats')
+		#print 'LOG :: ret_msg',resources
+		node_stats = json.loads(resources)
+		avail_mem = node_stats['mem']
+		avail_cores = node_stats['vcpu']
+		avail_disk = node_stats['disk']
+		print 'STATUS :: Available memory - ',avail_mem,'  Available cores - ',avail_cores,' Available disk - ',avail_disk
+		if avail_mem>memory and avail_cores>cores and avail_disk>disk:
+			print('LOG :: Creating VM at ',node)
+			VM_Name = 'CB'+str(int(time.time()))
+			status = nodes[RRpos].call_func('create',VM_Name,memory,cores,disk)
+			print 'LOG :: Status - ',status
+			if status=='True':
+				done_flag = True
+				ret_msg['VM_Name'] = VM_Name
+				ret_msg['Node'] = RRpos+1
+				break
+			else:
+				error = 'Internal issue'
+	ret_msg['Success'] = done_flag
+	if not done_flag:
+		ret_msg['Error'] = error
+	return json.dumps(ret_msg)
+
 def round_robin(memory,cores,disk):
 	print 'Round Robin Scheduling'
 	global RRpos
@@ -40,19 +70,19 @@ def round_robin(memory,cores,disk):
 		if RRpos>=len(nodes):
 			RRpos = 0
 		resources = nodes[RRpos].call_func('get_stats')
-		print 'LOG :: ret_msg',resources
+		#print 'LOG :: Available Resources before starting VM',resources
 		node_stats = json.loads(resources)
 		avail_mem = node_stats['mem']
 		avail_cores = node_stats['vcpu']
-		print 'STATUS :: Available memory - ',avail_mem,'  Available cores - ',avail_cores
-		if avail_mem>memory and avail_cores>cores:
+		avail_disk = node_stats['disk']
+		print 'STATUS :: Available memory - ',avail_mem,'  Available cores - ',avail_cores,' Available disk - ',avail_disk
+		if avail_mem>memory and avail_cores>cores and avail_disk>disk:
 			print('LOG :: Creating VM at NC',RRpos+1)
 			VM_Name = 'CB'+str(int(time.time()))
 			status = nodes[RRpos].call_func('create',VM_Name,memory,cores,disk)
 			print 'LOG :: Status - ',status
 			if status=='True':
 				done_flag = True
-				ret_msg = 'VM created at NC'+str(RRpos+1)
 				ret_msg['VM_Name'] = VM_Name
 				ret_msg['Node'] = RRpos+1
 			else:

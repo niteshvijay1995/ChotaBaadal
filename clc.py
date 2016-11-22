@@ -7,6 +7,9 @@ for cloud in clouds:
 VMs = {}	#Dictionary of VMs created (Key-VM_Name)
 #print cc1.call_func('round_robin',3000000,2,20)	#memory,cores,disk
 
+algo = 'round_robin'
+#algo = 'greedy'
+
 while True:
 	print '==============CB================'
 	print 'Hello, Welcome to Chota Baadal.'
@@ -25,7 +28,7 @@ while True:
 		cores = int(raw_input())
 		print 'Disk requirement in GB : '
 		disk = int(raw_input())
-		VM_info = cc1.call_func('round_robin',mem,cores,disk)
+		VM_info = cc1.call_func(algo,mem,cores,disk)
 		VM_info = json.loads(VM_info)
 		if VM_info['Success']:
 			print '\n--------------------------------'
