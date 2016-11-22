@@ -4,7 +4,7 @@ import sys
 import json
 import time
 
-PORT1 = 45675
+PORT1 = 64536
 PORT2 = 34534
 
 nc1 = jioClient('M-1908',PORT1)
@@ -16,8 +16,12 @@ RRpos = 0	#Round Robin position
 
 def connect_node_controller():
 	for node in nodes:
-		node.connect()
-		print'LOG :: Connected node controller : ',node
+		try:
+			node.connect()
+			print'LOG :: Connected node controller : ',node
+		except Exception as e:
+			print 'ERROR :: ',e
+
 
 connect_node_controller()
 def get_all_nodes_stats():
@@ -95,7 +99,7 @@ def round_robin(memory,cores,disk):
 	return json.dumps(ret_msg)
 
 def deleteVM(name,node):
-	nc = nodes['node']
+	nc = nodes[node-1]
 	return nc.call_func('delete',name)
 
 def exit():

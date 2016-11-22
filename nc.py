@@ -85,14 +85,6 @@ xmlconfig = """
 		<controller type='virtio-serial' index='0'>
 			<address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
 		</controller>
-		<interface type="bridge">
-			<mac address="#CBmac"/>
-			<source bridge="br0"/>
-			<target dev="vnet0"/>
-			<model type="virtio"/>
-			<alias name="net0"/>
-			<address bus="0x00" domain="0x0000" function="0x0" slot="0x03" type="pci"/>
-			</interface>
 		<serial type='pty'>
 			<source path="/dev/pts/12"/>
 			<target port='0'/>

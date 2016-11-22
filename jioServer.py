@@ -18,7 +18,7 @@ class jioServer:
 			print("JIOSERVER :: Receiving message...")
 			msg = self.c.recv(1024)
 			print("LOG ::  Message received : ",msg)
-			if msg=='exit':
+			if msg=='exit' or msg=='':
 				break;
 			json_msg = json.loads(msg)
 			func_name = json_msg['func_name']
