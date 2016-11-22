@@ -219,5 +219,9 @@ def getAllVM():
 		if dom == None:
 			print('Failed to get the domain object')
 		else:
-			domains[dom.name] = dom.info()
+			domains[dom.name()] = []
+			domains[dom.name()].append(dom.info()[2])
+			domains[dom.name()].append(dom.info()[3])
+			img_size=os.path.getsize("/var/lib/libvirt/images/"+dom.name()+".img")/1024**3
+			domains[dom.name()].append(img_size)
 	return json.dumps(domains)
