@@ -6,12 +6,12 @@ import time
 
 
 PORT1 = 45671
-PORT2 = 45675
+PORT2 = 45674
 
 nc1 = jioClient('172.50.88.13',PORT1)
 nc2 = jioClient('172.50.88.12',PORT2)
 
-nodes = [nc1,nc2]
+nodes = [nc1]
 
 RRpos = 0	#Round Robin position
 

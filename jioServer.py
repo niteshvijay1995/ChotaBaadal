@@ -4,7 +4,7 @@ class jioServer:
 	'Server Class for communication and calling function'
 	def __init__(self,port):
 		self.port = port
-		self.host = '172.50.88.13'
+		self.host = socket.gethostbyname(socket.gethostname())
 		self.s = socket.socket()
 		self.s.bind((self.host, self.port)) 
 	def listen(self):

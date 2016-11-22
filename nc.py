@@ -54,7 +54,7 @@ xmlconfig = """
 		</disk>
 		<disk type='file' device='cdrom'>
 			<driver name='qemu' type='raw'/>
-			<source file="/var/lib/libvirt/boot/CentOS-7-x86_64-DVD-1511.iso"/>
+			<source file="/var/lib/libvirt/boot/autoinstall.iso"/>
 			<target dev='hdc' bus='ide'/>
 			<readonly/>
 			<alias name="ide0-1-0"/>
