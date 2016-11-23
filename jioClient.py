@@ -28,6 +28,9 @@ class jioClient:
 		self.s.sendall('exit')
 		self.s.close
 
+	def getHost(self):
+		return self.host	
+
 	def __repr__(self):
 		return self.host
 	

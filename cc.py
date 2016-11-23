@@ -8,7 +8,7 @@ import time
 PORT1 = 45671
 PORT2 = 45674
 
-nc1 = jioClient('172.50.88.13',PORT1)
+nc1 = jioClient('127.0.0.1',PORT1)
 nc2 = jioClient('172.50.88.12',PORT2)
 
 nodes = [nc1]
@@ -106,12 +106,19 @@ def deleteVM(name,node):
 def first_fit_bin_packing():
 	i = 0
 	for pri_node in nodes:
-		resources = pri_node.call_func('get_stats')
-		resources = json.loads(resources)
 		for j in range(i+1,len(nodes)):
 			node = nodes[j]
 			domains = node.call_func('getAllVM')
 			domains = json.loads(domains)
+			for domain_name in domains:
+				resources = pri_node.call_func('get_stats')
+				pri_node_stat = json.loads(resources)
+				domain = domains[domain_name]
+				if domain['mem']<pri_node_stat['mem'] and domain['vcpu']<pri_node_stat['vcpu']:
+					print 'Migrating domain ',domain_name
+					node.call_func('migrate',domain_name,pri_node.getHost())
+					del domains[domain_name]
+					print 'Domain Migrated Successfully' 
 			print domains
 		i += 1
 	return 'hello'

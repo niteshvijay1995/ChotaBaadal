@@ -1,13 +1,25 @@
 from jioClient import jioClient
 import json
 import os.path
-PORT3 = 45366
-cc1 = jioClient('M-1908',PORT3)
+import thread
+import time
+
+PORT3 = 65454
+cc1 = jioClient('127.0.0.1',PORT3)
 clouds = [cc1]
 for cloud in clouds:
 	cloud.connect()
 VMs = {}	#Dictionary of VMs created (Key-VM_Name)
 #print cc1.call_func('round_robin',3000000,2,20)	#memory,cores,disk
+
+def first_fit_bin_packing():
+	print 'First fit bin packing' 
+	while True:
+		for cloud in clouds:
+			status = cloud.call_func('first_fit_bin_packing')
+			print status
+		time.sleep(120)
+
 
 #ialgo = 'round_robin'
 algo = 'greedy'
@@ -20,6 +32,7 @@ try:
 		print 'Hello, Welcome to Chota Baadal.'
 		print 'Press n to create new VM'
 		print 'Press d to delete a VM'
+		print 'Press s to start first_fit_bin_packing'
 		print 'Press q to quit'
 		print '================================'
 		inp = str(raw_input())
@@ -67,9 +80,11 @@ try:
 			print status,' ',VM_list[n-1]
 			if status == 'Deleted':
 				del VMs[VM_list[n-1]]
-		if inp == 'f':
-			status = clouds[0].call_func('first_fit_bin_packing')
-			print status
+		if inp == 's':
+			try:
+				thread.start_new_thread(first_fit_bin_packing,())
+			except Exception as e:
+				print 'Error in starting thread - ',e
 		if inp == 'q':
 			break;
 
@@ -81,3 +96,4 @@ finally:
     target = open('log.txt','wb')
     target.write(str(VMs))
     print VMs
+
