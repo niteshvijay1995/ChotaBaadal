@@ -9,7 +9,8 @@ class jioServer:
 		self.s.bind((self.host, self.port)) 
 	def listen(self):
 		self.s.listen(5)
-		print("JIOSERVER :: Listening...")
+		print('JIOSERVER :: Host...',self.host)
+		print("JIOSERVER :: Listening on port...",self.port)
 		self.c, self.addr = self.s.accept()
 		print ("JIOSERVER :: Connected with Client on ",self.addr)
 		

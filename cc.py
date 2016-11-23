@@ -5,13 +5,13 @@ import json
 import time
 
 
-PORT1 = 45671
-PORT2 = 45674
+PORT1 = 45677
+PORT2 = 47777
 
-nc1 = jioClient('127.0.0.1',PORT1)
+nc1 = jioClient('172.50.88.13',PORT1)
 nc2 = jioClient('172.50.88.12',PORT2)
 
-nodes = [nc1]
+nodes = [nc1,nc2]
 
 RRpos = 0	#Round Robin position
 
@@ -117,12 +117,24 @@ def first_fit_bin_packing():
 				if domain['mem']<pri_node_stat['mem'] and domain['vcpu']<pri_node_stat['vcpu']:
 					print 'Migrating domain ',domain_name
 					node.call_func('migrate',domain_name,pri_node.getHost())
-					del domains[domain_name]
 					print 'Domain Migrated Successfully' 
 			print domains
 		i += 1
 	return 'hello'
 
+def getVM():
+	VMs = []
+	for node in nodes:
+		domains = node.call_func('getAllVM')
+		domains = json.loads(domains)
+		domain_list = []
+		for domain_name in domains:
+			domain_list.append(domain_name)
+		VMs.append(domain_list)
+	print VMs
+	ret_msg = {}
+	ret_msg['VMs'] = VMs
+	return json.dumps(ret_msg)
 def exit():
 	for node in nodes:
 		node.close()

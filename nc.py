@@ -54,7 +54,7 @@ xmlconfig = """
 		</disk>
 		<disk type='file' device='cdrom'>
 			<driver name='qemu' type='raw'/>
-			<source file="/var/lib/libvirt/boot/auto2.iso"/>
+			<source file="/var/lib/libvirt/boot/CentOS-7-x86_64-DVD-1511.iso"/>
 			<target dev='hdc' bus='ide'/>
 			<readonly/>
 			<alias name="ide0-1-0"/>
@@ -222,6 +222,4 @@ def getAllVM():
 			domains[dom.name()] = {}
 			domains[dom.name()]['mem'] = dom.info()[2]
 			domains[dom.name()]['vcpu'] = dom.info()[3]
-			img_size=os.path.getsize("/var/lib/libvirt/images/"+dom.name()+".img")/1024**3
-			domains[dom.name()].append(img_size)
 	return json.dumps(domains)

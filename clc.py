@@ -5,7 +5,7 @@ import thread
 import time
 
 PORT3 = 65454
-cc1 = jioClient('127.0.0.1',PORT3)
+cc1 = jioClient('172.50.88.13',PORT3)
 clouds = [cc1]
 for cloud in clouds:
 	cloud.connect()
@@ -21,8 +21,8 @@ def first_fit_bin_packing():
 		time.sleep(120)
 
 
-#ialgo = 'round_robin'
-algo = 'greedy'
+algo = 'round_robin'
+#algo = 'greedy'
 if os.path.isfile('log.txt'):
 	s = open('log.txt', 'r').read()
 	VMs = eval(s)
@@ -59,27 +59,34 @@ try:
 			else:
 				print 'Sorry, unable to create new VM due to ',VM_info['Error']
 		if inp == 'd':
-			if len(VMs)==0:
+			print 'Select the VM which you want to delete'
+			VM_list = []
+			cloud_idx = 0
+			i = 1
+			for cloud in clouds:
+				domain_list = cloud.call_func('getVM')
+				domain_list = json.loads(domain_list)['VMs']
+				node_idx = 1 
+				for node in domain_list:
+					for domain_name in node:
+						print i,'. ',domain_name
+						VM_list.append([domain_name,node_idx,cloud_idx])
+						i += 1
+					node_idx += 1
+			if len(VM_list)==0:
 				print 'No VM created!'
 				continue
-			print 'Select the VM which you want to delete'
-			i = 1
-			VM_list = []
-			for name in VMs:
-				print i,'. ',name
-				VM_list.append(name)
-				i += 1
 			print '0 to Cancel'
 			n = int(raw_input())
 			if n==0:
 				continue
-			VM = VMs[VM_list[n-1]]
-			print VM
-			cloud = clouds[VM['cc']]
-			status = cloud.call_func('deleteVM',VM_list[n-1],VM['nc'])
+			domain_name_to_delete = VM_list[n-1][0]
+			node_to_call = VM_list[n-1][1]
+			cloud = clouds[VM_list[n-1][2]]
+			status = cloud.call_func('deleteVM',domain_name_to_delete,node_to_call)
 			print status,' ',VM_list[n-1]
 			if status == 'Deleted':
-				del VMs[VM_list[n-1]]
+				'VM deleted successfully'
 		if inp == 's':
 			try:
 				thread.start_new_thread(first_fit_bin_packing,())
