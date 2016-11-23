@@ -193,9 +193,9 @@ def get_stats():
 	return json.dumps(json_msg)
 
 def migrate(domName,destHost):
-	dest_conn = libvirt.open('qemu+ssh://'+destHost+'/system')
+	dest_conn = libvirt.open('qemu+ssh://mpiuser@'+destHost+'/system')
 	if dest_conn == None:
-		print('Failed to open connection to qemu+ssh://'+destHost+'/system')
+		print('Failed to open connection to qemu+ssh://mpiuser@'+destHost+'/system')
 		exit(1)
 	dom = conn.lookupByName(domName)
 	if dom == None:
