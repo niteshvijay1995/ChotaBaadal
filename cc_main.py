@@ -9,4 +9,3 @@ if __name__ == "__main__":
 	clc = jioServer(PORT3)
 	clc.listen()
 	clc.recv_msg_call_func(cc)
-	cc.exit()

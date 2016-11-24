@@ -21,8 +21,10 @@ def first_fit_bin_packing():
 		time.sleep(120)
 
 
-algo = 'round_robin'
+#algo = 'round_robin'
 #algo = 'greedy'
+algo = 'match_making'
+
 if os.path.isfile('log.txt'):
 	s = open('log.txt', 'r').read()
 	VMs = eval(s)
@@ -47,6 +49,7 @@ try:
 			print 'Disk requirement in GB : '
 			disk = int(raw_input())
 			VM_info = cc1.call_func(algo,mem,cores,disk)
+			print VM_info
 			VM_info = json.loads(VM_info)
 			if VM_info['Success']:
 				print '\n--------------------------------'
@@ -102,5 +105,5 @@ except Exception as e:
 finally:
     target = open('log.txt','wb')
     target.write(str(VMs))
-    print VMs
+    #print VMs
 

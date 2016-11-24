@@ -5,13 +5,13 @@ import json
 import time
 
 
-PORT1 = 45677
+PORT1 = 45454
 PORT2 = 47777
 
 nc1 = jioClient('172.50.88.13',PORT1)
 nc2 = jioClient('172.50.88.12',PORT2)
 
-nodes = [nc1,nc2]
+nodes = [nc1]
 
 RRpos = 0	#Round Robin position
 
@@ -28,13 +28,15 @@ connect_node_controller()
 
 def get_all_nodes_stats():
 	stats_list = []
+	node_idx = 1
 	for node in nodes:
 		ret_msg = node.call_func('get_stats')
 		node_stats = json.loads(ret_msg)
 		#node_stats['mem']
 		#node_stats['vcpu']
-		node_stats['node']  = node
+		node_stats['node']  = node_idx
 		stats_list.append(node_stats)
+		node_idx += 1
 	return stats_list
 
 def greedy(memory,cores,disk):
@@ -106,15 +108,16 @@ def round_robin(memory,cores,disk):
 
 def match_making(memory,cores,disk):
 	ret_msg = {}
-	done_flag = Flase
+	done_flag = False
 	node_stats_list = get_all_nodes_stats()
 	sorted(node_stats_list, key = lambda x: (x['mem'],x['vcpu']))
-	nodes_stats = node_stats_list[0]
+	node_stats = node_stats_list[0]
 	avail_mem = node_stats['mem']
 	avail_cores = node_stats['vcpu']
 	avail_disk = node_stats['disk']
+	error = 'Resources unavailable'
 	if avail_mem>memory and avail_cores>cores and avail_disk>disk:
-		node = node_stats['node']
+		node = nodes[node_stats['node']-1]
 		print('LOG :: Creating VM at ',node)
 		VM_Name = 'CB'+str(int(time.time()))
 		status = node.call_func('create',VM_Name,memory,cores,disk)
@@ -122,13 +125,13 @@ def match_making(memory,cores,disk):
 		if status=='True':
 			done_flag = True
 			ret_msg['VM_Name'] = VM_Name
-			ret_msg['Node'] = RRpos+1
-			break
+			ret_msg['Node'] = node_stats['node']
 		else:
 			error = 'Internal issue'
 	ret_msg['Success'] = done_flag
 	if not done_flag:
 		ret_msg['Error'] = error
+	print ret_msg
 	return json.dumps(ret_msg)
 
 def deleteVM(name,node):
@@ -137,6 +140,7 @@ def deleteVM(name,node):
 
 def first_fit_bin_packing():
 	i = 0
+	res = 0
 	for pri_node in nodes:
 		for j in range(i+1,len(nodes)):
 			node = nodes[j]
@@ -149,10 +153,11 @@ def first_fit_bin_packing():
 				if domain['mem']<pri_node_stat['mem'] and domain['vcpu']<pri_node_stat['vcpu']:
 					print 'Migrating domain ',domain_name
 					node.call_func('migrate',domain_name,pri_node.getHost())
-					print 'Domain Migrated Successfully' 
+					print 'Domain Migrated Successfully'
+					res += 1 
 			print domains
 		i += 1
-	return 'hello'
+	return str(res)+' domains migrated.'
 
 def getVM():
 	VMs = []
