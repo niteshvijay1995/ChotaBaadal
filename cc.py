@@ -25,12 +25,17 @@ def connect_node_controller():
 
 
 connect_node_controller()
+
 def get_all_nodes_stats():
+	stats_list = []
 	for node in nodes:
 		ret_msg = node.call_func('get_stats')
 		node_stats = json.loads(ret_msg)
-		node_stats['mem']
-		node_stats['vcpu']
+		#node_stats['mem']
+		#node_stats['vcpu']
+		node_stats['node']  = node
+		stats_list.append(node_stats)
+	return stats_list
 
 def greedy(memory,cores,disk):
 	print 'Greedy Scheduling'
@@ -48,7 +53,7 @@ def greedy(memory,cores,disk):
 		if avail_mem>memory and avail_cores>cores and avail_disk>disk:
 			print('LOG :: Creating VM at ',node)
 			VM_Name = 'CB'+str(int(time.time()))
-			status = nodes[RRpos].call_func('create',VM_Name,memory,cores,disk)
+			status = node.call_func('create',VM_Name,memory,cores,disk)
 			print 'LOG :: Status - ',status
 			if status=='True':
 				done_flag = True
@@ -70,7 +75,7 @@ def round_robin(memory,cores,disk):
 	no_of_try = 0
 	print 'Loop condition -',(not done_flag) and (no_of_try<len(nodes))
 	ret_msg = {}
-	error = 'Unavailable resources'
+	error = 'Resources unavailable'
 	while (not done_flag) and (no_of_try<=len(nodes)):
 		if RRpos>=len(nodes):
 			RRpos = 0
@@ -94,6 +99,33 @@ def round_robin(memory,cores,disk):
 				error = 'Internal issue'
 		RRpos = RRpos+1
 		no_of_try = no_of_try+1
+	ret_msg['Success'] = done_flag
+	if not done_flag:
+		ret_msg['Error'] = error
+	return json.dumps(ret_msg)
+
+def match_making(memory,cores,disk):
+	ret_msg = {}
+	done_flag = Flase
+	node_stats_list = get_all_nodes_stats()
+	sorted(node_stats_list, key = lambda x: (x['mem'],x['vcpu']))
+	nodes_stats = node_stats_list[0]
+	avail_mem = node_stats['mem']
+	avail_cores = node_stats['vcpu']
+	avail_disk = node_stats['disk']
+	if avail_mem>memory and avail_cores>cores and avail_disk>disk:
+		node = node_stats['node']
+		print('LOG :: Creating VM at ',node)
+		VM_Name = 'CB'+str(int(time.time()))
+		status = node.call_func('create',VM_Name,memory,cores,disk)
+		print 'LOG :: Status - ',status
+		if status=='True':
+			done_flag = True
+			ret_msg['VM_Name'] = VM_Name
+			ret_msg['Node'] = RRpos+1
+			break
+		else:
+			error = 'Internal issue'
 	ret_msg['Success'] = done_flag
 	if not done_flag:
 		ret_msg['Error'] = error
