@@ -4,14 +4,23 @@ import sys
 import json
 import time
 
-
-PORT1 = 45454
-PORT2 = 47777
-
-nc1 = jioClient('172.50.88.13',PORT1)
-nc2 = jioClient('172.50.88.12',PORT2)
-
-nodes = [nc1]
+nodes = []
+i = 1
+while True:
+	print 'NC',i,' IP -'
+	IP = raw_input()
+	print 'NC',i,' PORT - '
+	PORT  = int(raw_input())
+	try:
+		nc = jioClient(IP,PORT)
+		nodes.append(nc)
+	except Exception as e:
+		print 'ERROR :: NC connection failed with Error ',e
+	print 'Add more NC? (y/n)'
+	response = raw_input()
+	i += 1
+	if response != 'y':
+		break
 
 RRpos = 0	#Round Robin position
 

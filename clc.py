@@ -4,9 +4,24 @@ import os.path
 import thread
 import time
 
-PORT3 = 65454
-cc1 = jioClient('172.50.88.13',PORT3)
-clouds = [cc1]
+clouds = []
+i = 1
+while True:
+	print 'CC',i,' IP -'
+	IP = raw_input()
+	print 'CC',i,' PORT - '
+	PORT  = int(raw_input())
+	try:
+		cc = jioClient(IP,PORT)
+		clouds.append(cc)
+	except Exception as e:
+		print 'ERROR :: CC connection failed with Error ',e
+	print 'Add more CC? (y/n)'
+	response = raw_input()
+	i += 1
+	if response != 'y':
+		break
+
 for cloud in clouds:
 	cloud.connect()
 VMs = {}	#Dictionary of VMs created (Key-VM_Name)
