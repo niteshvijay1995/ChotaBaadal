@@ -36,9 +36,9 @@ def first_fit_bin_packing():
 		time.sleep(120)
 
 
-#algo = 'round_robin'
+algo = 'round_robin'
 #algo = 'greedy'
-algo = 'match_making'
+#algo = 'match_making'
 
 if os.path.isfile('log.txt'):
 	s = open('log.txt', 'r').read()
@@ -50,9 +50,39 @@ try:
 		print 'Press n to create new VM'
 		print 'Press d to delete a VM'
 		print 'Press s to start first_fit_bin_packing'
+		print 'Press g to start script'
+		print 'Press c to change algo'
 		print 'Press q to quit'
 		print '================================'
 		inp = str(raw_input())
+		if inp == 'c':
+			print 'Algo name'
+			algo = raw_input()
+		if inp == 'g':
+			print 'Enter filename'
+			file_name = raw_input()
+			file = open(file_name, 'r')
+			for line in file:
+				values = line.split()
+				zone = int(values[0])
+				cloud = clouds[zone-1]
+				mem = int(values[1])*1024
+				cores = int(values[2])
+				disk = int(values[3])
+				VM_info = cloud.call_func(algo,mem,cores,disk)
+				print VM_info
+				VM_info = json.loads(VM_info)
+				if VM_info['Success']:
+					print '\n--------------------------------'
+					print 'VM created successfully'
+					print 'VM Name : ',VM_info['VM_Name']
+					print 'Zone : ',zone
+					print 'Node : ',VM_info['Node']
+					print '----------------------------------\n'
+					VMs[VM_info['VM_Name']] = {'cc':zone-1,'nc':VM_info['Node']}
+				else:
+					print 'Sorry, unable to create new VM due to ',VM_info['Error']
+
 		if inp == 'n':
 			print 'Please select the zone (1/2)'
 			zone = int(raw_input())
@@ -63,7 +93,7 @@ try:
 			cores = int(raw_input())
 			print 'Disk requirement in GB : '
 			disk = int(raw_input())
-			VM_info = cc1.call_func(algo,mem,cores,disk)
+			VM_info = cloud.call_func(algo,mem,cores,disk)
 			print VM_info
 			VM_info = json.loads(VM_info)
 			if VM_info['Success']:
