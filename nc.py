@@ -222,3 +222,27 @@ def getAllVM():
 			domains[dom.name()]['mem'] = dom.info()[2]
 			domains[dom.name()]['vcpu'] = dom.info()[3]
 	return json.dumps(domains)
+
+def addVol(domName, disk_name,vol_name):
+	try:
+		disk = """
+		<disk type='file' device='disk'>
+			<driver name='qemu' type='qcow2' cache='none'/>
+			<source file='/var/lib/libvirt/images/"""+disk_name+""".qcow2'/>
+			<backingStore/>
+			<target dev='"""+vol_name+"""' bus='virtio'/>
+		</disk>
+		"""
+		dom = conn.lookupByName(domName)
+		dom.attachDeviceFlags(disk)
+		return "Added successfully"
+	except Exception as e:
+		return str(e)
+
+def delVol(domName,vol_name):
+	try:
+		cmd = "virsh detach-disk "+domName+" "+vol_name
+		os.system(cmd)
+		return "Detached successfully"
+	except Exceptiopn as e:
+		return str(e)	

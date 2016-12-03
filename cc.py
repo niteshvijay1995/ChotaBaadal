@@ -3,6 +3,10 @@ from jioClient import jioClient
 import sys
 import json
 import time
+import libvirt
+
+conn = libvirt.open("qemu:///system")
+pool = conn.storagePoolLookupByName('images')
 
 nodes = []
 i = 1
@@ -53,6 +57,7 @@ def greedy(memory,cores,disk):
 	ret_msg = {}
 	done_flag = False
 	error = 'Unavailable resources'
+	i = 1
 	for node in nodes:
 		resources = node.call_func('get_stats')
 		#print 'LOG :: ret_msg',resources
@@ -69,10 +74,11 @@ def greedy(memory,cores,disk):
 			if status=='True':
 				done_flag = True
 				ret_msg['VM_Name'] = VM_Name
-				ret_msg['Node'] = RRpos+1
+				ret_msg['Node'] = i
 				break
 			else:
 				error = 'Internal issue'
+		i += 1
 	ret_msg['Success'] = done_flag
 	if not done_flag:
 		ret_msg['Error'] = error
@@ -181,6 +187,41 @@ def getVM():
 	ret_msg = {}
 	ret_msg['VMs'] = VMs
 	return json.dumps(ret_msg)
+
+def createStoragePoolVolume(name, disk_size):
+    stpVolXml = """
+    <volume>
+        <name>"""+name+""".qcow2</name>
+        <allocation>0</allocation>
+        <capacity unit="G">"""+str(disk_size)+"""</capacity>
+        <target>
+            <format type='qcow2'/>
+            <path>/var/lib/libvirt/images/"""+name+""".qcow2</path>
+            <permissions>
+                <owner>107</owner>
+                <group>107</group>
+                <mode>0744</mode>
+                <label>virt_image_t</label>
+            </permissions>
+        </target>
+    </volume>
+    """
+    stpVol = pool.createXML(stpVolXml, 0)
+    return stpVol
+
+def createVol(node,domain_name,disk_name,disk_size,vol_name):
+	stpVol = createStoragePoolVolume(disk_name,disk_size)
+	nc = nodes[node-1]
+	return nc.call_func('addVol',domain_name,disk_name,vol_name)
+
+def createVol2(node,domain_name,disk_name,vol_name):
+	nc = nodes[node-1]
+	return nc.call_func('addVol',domain_name,disk_name,vol_name)
+
+def detachVol(node,domain_name,vol_name):
+	nc = nodes[node-1]
+	return nc.call_func('delVol',domain_name,vol_name)
+
 def exit():
 	for node in nodes:
 		node.close()

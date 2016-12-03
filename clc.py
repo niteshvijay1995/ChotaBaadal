@@ -52,6 +52,8 @@ try:
 		print 'Press s to start first_fit_bin_packing'
 		print 'Press g to start script'
 		print 'Press c to change algo'
+		print 'Press v to attach new storage volume'
+		print 'Press dv to detach storage volume'
 		print 'Press q to quit'
 		print '================================'
 		inp = str(raw_input())
@@ -82,6 +84,82 @@ try:
 					VMs[VM_info['VM_Name']] = {'cc':zone-1,'nc':VM_info['Node']}
 				else:
 					print 'Sorry, unable to create new VM due to ',VM_info['Error']
+				time.sleep(1)
+
+		if inp == 'v':
+			print 'Select the VM in which you want to add Storage'
+			VM_list = []
+			cloud_idx = 0
+			i = 1
+			for cloud in clouds:
+				domain_list = cloud.call_func('getVM')
+				domain_list = json.loads(domain_list)['VMs']
+				node_idx = 1 
+				for node in domain_list:
+					for domain_name in node:
+						print i,'. ',domain_name
+						VM_list.append([domain_name,node_idx,cloud_idx])
+						i += 1
+					node_idx += 1
+			if len(VM_list)==0:
+				print 'No VM created!'
+				continue
+			print '0 to Cancel'
+			n = int(raw_input())
+			if n==0:
+				continue
+			domain_name_to_add = VM_list[n-1][0]
+			node_to_call = VM_list[n-1][1]
+			cloud = clouds[VM_list[n-1][2]]
+			print 'Already available image? (y/n)'
+			ans = raw_input()
+			if ans == 'y':
+				print 'Disk name : '
+				disk_name = raw_input()
+				print 'Vol name : '
+				vol_name = raw_input()
+				disk_info = cloud.call_func('createVol2',node_to_call,domain_name_to_add,disk_name,vol_name)
+				print disk_info
+			else:
+				print 'Disk requirement in GB : '
+				disk_size = int(raw_input())
+				print 'Disk name : '
+				disk_name = raw_input()
+				print 'Vol name : '
+				vol_name = raw_input()
+				disk_info = cloud.call_func('createVol',node_to_call,domain_name_to_add,disk_name,disk_size,vol_name)
+				print disk_info
+
+		if inp == 'dv':
+			print 'Select the VM in which you want to detach Storage'
+			VM_list = []
+			cloud_idx = 0
+			i = 1
+			for cloud in clouds:
+				domain_list = cloud.call_func('getVM')
+				domain_list = json.loads(domain_list)['VMs']
+				node_idx = 1 
+				for node in domain_list:
+					for domain_name in node:
+						print i,'. ',domain_name
+						VM_list.append([domain_name,node_idx,cloud_idx])
+						i += 1
+					node_idx += 1
+			if len(VM_list)==0:
+				print 'No VM created!'
+				continue
+			print '0 to Cancel'
+			n = int(raw_input())
+			if n==0:
+				continue
+			domain_name_to_add = VM_list[n-1][0]
+			node_to_call = VM_list[n-1][1]
+			cloud = clouds[VM_list[n-1][2]]
+			print 'Vol name : '
+			vol_name = raw_input()
+			disk_info = cloud.call_func('detachVol',node_to_call,domain_name_to_add,vol_name)
+			print disk_info
+
 
 		if inp == 'n':
 			print 'Please select the zone (1/2)'
