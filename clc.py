@@ -54,12 +54,17 @@ try:
 		print 'Press c to change algo'
 		print 'Press v to attach new storage volume'
 		print 'Press dv to detach storage volume'
+		print 'Press a to start autoscaling'
 		print 'Press q to quit'
 		print '================================'
 		inp = str(raw_input())
 		if inp == 'c':
 			print 'Algo name'
 			algo = raw_input()
+		if inp == 'a':
+			for cloud in clouds:
+				result = cloud.call_func('start_auto_scale')
+				print result
 		if inp == 'g':
 			print 'Enter filename'
 			file_name = raw_input()

@@ -246,3 +246,25 @@ def delVol(domName,vol_name):
 		return "Detached successfully"
 	except Exceptiopn as e:
 		return str(e)	
+
+
+def scale(domName):
+	dom = conn.lookupByName(domName)
+	mem = (dom.maxMemory()/1024)*2
+	cpus = dom.maxVcpus() * 2 
+	os.system('virsh setmem '+domName+str(mem)+'G --config')
+	print 'LOG :: Scaling done'
+
+def autoscale():
+	a=getAllVM()
+	a=json.loads(a)
+	for domain_name in a:
+		dom = conn.lookupByName(domain_name)
+		maxmem = dom.maxMemory()
+		mem=a[domain_name]['mem']
+		print 'LOG :: maxmem - ',str(maxmem),' mem - ',str(mem)
+		if mem/maxmem > 0.6:
+			print 'LOG :: scaling ',domain_name
+			scale(domain_name)
+	return 'Success'
+

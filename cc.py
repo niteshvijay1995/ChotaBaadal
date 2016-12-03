@@ -125,7 +125,7 @@ def match_making(memory,cores,disk):
 	ret_msg = {}
 	done_flag = False
 	node_stats_list = get_all_nodes_stats()
-	sorted(node_stats_list, key = lambda x: (x['mem'],x['vcpu']))
+	node_stats_list = sorted(node_stats_list, key = lambda x: (x['mem'],x['vcpu']))
 	node_stats = node_stats_list[-1]
 	avail_mem = node_stats['mem']
 	avail_cores = node_stats['vcpu']
@@ -221,6 +221,11 @@ def createVol2(node,domain_name,disk_name,vol_name):
 def detachVol(node,domain_name,vol_name):
 	nc = nodes[node-1]
 	return nc.call_func('delVol',domain_name,vol_name)
+
+def start_auto_scale():
+	for node in nodes:
+		node.call_func('autoscale')
+	return 'Success'
 
 def exit():
 	for node in nodes:
