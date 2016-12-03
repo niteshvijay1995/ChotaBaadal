@@ -1,11 +1,12 @@
-import ptrace.debugger
+#import ptrace.debugger
 import subprocess
 import signal
 import os
 import sys
-
+import time
 var = False
 
+# add relevant stuff as given at: https://criu.org/Checkpoint/Restore
 def save_process(pid):
 	t = PtraceProcess(pid)
 	t.syscall()
@@ -45,21 +46,32 @@ def checkpoint(pid):
 	os.system("echo 12345678 | sudo -S criu dump -t " + str(pid) +" --images-dir ./img-dir_" + str(pid) + "/ --shell-job -vvv -o dump.log")
 	print "Process successfully checkpointed."
 
+	command = "crit show img-dir_" + str(pid) + "/core-" + str(pid) + ".img"
+	process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)		
+	process.wait()
+	while True:
+		line = process.stdout.readline()
+		if line != '':
+			#the real code does filtering here
+			print line.rstrip()
+		else:
+			break
 def restore(pid):
 	if os.path.isdir("./img-dir_" + str(pid)):
 		#os.system("pwd")
 		os.chdir("./img-dir_" + str(pid) + "/")
 		# subprocess.call("echo 12345678 | sudo -i", shell=True)
 		#os.system("pwd")
-	#	os.system("echo 12345678 | sudo -S criu restore --shell-job -d -vvv -o restore.log")
+		#os.system("echo 12345678 | sudo -S criu restore -d -vvv -o restore.log &")
 		# #os.system("pwd")
 		# command = "pwd"
 		# process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)		
 		# print process.stdout.readline()
 		#subprocess.call("cd " + "./img-dir_" + str(pid) + "/", shell=True)
-		subprocess.call("criu restore --shell-job -d -vvv -o restore.log", shell=True) #&& echo 'Process restored successfully.'", shell=True)
-		#command = "echo 12345678 | sudo -S criu restore --shell-job -d -vvv -o restore.log"
-		#process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)		
+		#subprocess.call("criu restore --shell-job -d -vvv -o restore.log", shell=True) #&& echo 'Process restored successfully.'", shell=True)
+		command = "echo 12345678 | sudo -S criu restore -D /home/nilay/ChotaBaadal/img-dir_" + str(pid) + "/ -d -vvv -o restore.log"
+		process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)		
+		process.wait()
 		#print process.stdout.readline()
 		#os.system("echo 123 | sudo -S criu restore --shell-job -d -vvv -o restore.log")
 		# print "Process restored successfully."
