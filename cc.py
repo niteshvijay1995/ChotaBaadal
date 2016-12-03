@@ -126,7 +126,7 @@ def match_making(memory,cores,disk):
 	done_flag = False
 	node_stats_list = get_all_nodes_stats()
 	sorted(node_stats_list, key = lambda x: (x['mem'],x['vcpu']))
-	node_stats = node_stats_list[0]
+	node_stats = node_stats_list[-1]
 	avail_mem = node_stats['mem']
 	avail_cores = node_stats['vcpu']
 	avail_disk = node_stats['disk']

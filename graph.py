@@ -13,5 +13,5 @@ while True:
 	str1 = str(sec) + ' '+str(mem)+' '+str(no_of_VM)+' '+str(stats)+'\n'
 	f.write(str1)
 	print '.'
-	time.sleep(2)
+	time.sleep(1)
 f.close
